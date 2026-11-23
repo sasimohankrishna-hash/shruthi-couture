@@ -1,0 +1,50 @@
+-- STATUS: BLOCKED — this is not an executable migration.
+--
+-- The project owner reports that public.create_order(text,text,jsonb)
+-- assigns a product ID to the variant-ID variable in its second loop.
+-- The complete live function body is not present in the repository and is
+-- not available through PostgREST OpenAPI metadata. A full replacement
+-- cannot be prepared safely until the existing function is inspected for
+-- additional validation, locking, totals, transaction behavior, ownership,
+-- security settings, and grants.
+--
+-- Read-only source retrieval. Run these SELECT statements in Supabase SQL
+-- Editor or an authorized read-only PostgreSQL session, then provide the
+-- results with any sensitive values redacted. Do not send access tokens or
+-- database passwords.
+--
+-- SELECT pg_get_functiondef(
+--   'public.create_order(text,text,jsonb)'::regprocedure
+-- );
+--
+-- SELECT pg_get_functiondef(
+--   'public.confirm_order(uuid)'::regprocedure
+-- );
+--
+-- SELECT pg_get_functiondef(
+--   'public.is_admin()'::regprocedure
+-- );
+--
+-- Read-only ownership, SECURITY DEFINER, search_path, and ACL inspection:
+-- SELECT p.oid::regprocedure AS function_signature,
+--        pg_get_userbyid(p.proowner) AS owner,
+--        p.prosecdef AS security_definer,
+--        p.proconfig AS function_settings,
+--        p.proacl AS acl,
+--        has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_can_execute,
+--        has_function_privilege('authenticated', p.oid, 'EXECUTE')
+--          AS authenticated_can_execute,
+--        has_function_privilege('service_role', p.oid, 'EXECUTE')
+--          AS service_role_can_execute
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname IN ('create_order', 'confirm_order', 'is_admin')
+-- ORDER BY p.proname, p.oid::regprocedure::text;
+--
+-- After the live definition and permissions are reviewed, prepare a narrowly
+-- scoped CREATE OR REPLACE definition that preserves the verified signature,
+-- return type, owner, security settings, and intended grants. The corrected
+-- function must use distinct v_product_id and v_variant_id variables and
+-- preserve the database-calculated snapshots and existing stock-confirmation
+-- workflow. Review and approve the completed SQL before any execution.

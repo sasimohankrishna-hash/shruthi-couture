@@ -1,0 +1,98 @@
+-- Phase 1 schema review only; this file is intentionally non-executable.
+-- No DDL is proposed because the available PostgREST metadata does not show
+-- existing unique/check constraints, indexes, RLS policies, FK actions, or
+-- function definitions/permissions. Do not apply this file as a migration.
+--
+-- The following are read-only catalog/data verification queries. To run one,
+-- copy it into the Supabase SQL Editor or a read-only SQL session without the
+-- leading comment markers. Redact personal data and any embedded credentials
+-- before sharing results.
+--
+-- Columns, types, nullability, and defaults:
+-- SELECT table_name, column_name, data_type, udt_name, is_nullable,
+--        column_default
+-- FROM information_schema.columns
+-- WHERE table_schema = 'public'
+--   AND table_name IN (
+--     'collections', 'products', 'product_images', 'product_variants',
+--     'admin_users', 'orders', 'order_items', 'enquiries'
+--   )
+-- ORDER BY table_name, ordinal_position;
+--
+-- Primary keys, unique/check constraints, foreign keys, and FK actions:
+-- SELECT conrelid::regclass AS table_name, conname, contype,
+--        pg_get_constraintdef(oid) AS definition, confdeltype, confupdtype
+-- FROM pg_constraint
+-- WHERE connamespace = 'public'::regnamespace
+--   AND conrelid::regclass::text IN (
+--     'collections', 'products', 'product_images', 'product_variants',
+--     'admin_users', 'orders', 'order_items', 'enquiries'
+--   )
+-- ORDER BY conrelid::regclass::text, conname;
+--
+-- Indexes:
+-- SELECT tablename, indexname, indexdef
+-- FROM pg_indexes
+-- WHERE schemaname = 'public'
+--   AND tablename IN (
+--     'collections', 'products', 'product_images', 'product_variants',
+--     'admin_users', 'orders', 'order_items', 'enquiries'
+--   )
+-- ORDER BY tablename, indexname;
+--
+-- RLS enablement and force-RLS flags:
+-- SELECT c.relname AS table_name, c.relrowsecurity AS rls_enabled,
+--        c.relforcerowsecurity AS rls_forced
+-- FROM pg_class c
+-- JOIN pg_namespace n ON n.oid = c.relnamespace
+-- WHERE n.nspname = 'public'
+--   AND c.relname IN (
+--     'collections', 'products', 'product_images', 'product_variants',
+--     'admin_users', 'orders', 'order_items', 'enquiries'
+--   )
+-- ORDER BY c.relname;
+--
+-- RLS policies:
+-- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual,
+--        with_check
+-- FROM pg_policies
+-- WHERE schemaname = 'public'
+--   AND tablename IN (
+--     'collections', 'products', 'product_images', 'product_variants',
+--     'admin_users', 'orders', 'order_items', 'enquiries'
+--   )
+-- ORDER BY tablename, policyname;
+--
+-- RPC definitions, return types, security-definer flag, and execute grants:
+-- SELECT n.nspname, p.proname,
+--        pg_get_function_identity_arguments(p.oid) AS arguments,
+--        pg_get_function_result(p.oid) AS result_type,
+--        p.prosecdef AS security_definer, p.proacl AS acl,
+--        has_function_privilege('authenticated', p.oid, 'EXECUTE')
+--          AS authenticated_can_execute,
+--        has_function_privilege('service_role', p.oid, 'EXECUTE')
+--          AS service_role_can_execute,
+--        pg_get_functiondef(p.oid) AS definition
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname IN ('create_order', 'confirm_order', 'is_admin')
+-- ORDER BY p.proname, arguments;
+--
+-- Existing data that would violate the requested numeric rules:
+-- SELECT
+--   (SELECT count(*) FROM public.product_variants
+--    WHERE price <= 0 OR stock < 0) AS invalid_variants,
+--   (SELECT count(*) FROM public.order_items
+--    WHERE quantity < 1 OR quantity > 1000 OR product_price <= 0
+--       OR line_total <= 0
+--       OR line_total <> product_price * quantity) AS invalid_order_items,
+--   (SELECT count(*) FROM public.orders WHERE total_amount <= 0)
+--     AS invalid_orders;
+--
+-- Per-order total consistency:
+-- SELECT o.id, o.total_amount, COALESCE(sum(oi.line_total), 0) AS item_total
+-- FROM public.orders o
+-- LEFT JOIN public.order_items oi ON oi.order_id = o.id
+-- GROUP BY o.id, o.total_amount
+-- HAVING o.total_amount <> COALESCE(sum(oi.line_total), 0);

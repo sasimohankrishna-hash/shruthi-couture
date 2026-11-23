@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f5ee">
+    <meta
+      name="description"
+      content="Explore the Shruthi's Couture collection and discover occasion wear for the whole family."
+    >
+    <title>Shop the Collection | Shruthi's Couture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="supabase-config.js" defer></script>
+    <script src="store-data.js" defer></script>
+    <script src="storefront-api.js" defer></script>
+    <script src="collection.js" defer></script>
+  </head>
+  <body class="collection-page-body">
+    <div class="announcement" role="note">
+      <p><span aria-hidden="true">✦</span> SHRUTHI'S COUTURE <span class="announcement-dot">·</span> EXCLUSIVE ETHNIC WEAR &amp; CUSTOM MAGAM WORKS <span aria-hidden="true">✦</span></p>
+    </div>
+
+    <header class="collection-page-header">
+      <a class="brand" href="index.html" aria-label="Shruthi's Couture home">
+        <span class="brand-name">SHRUTHI'S COUTURE</span>
+        <span class="brand-subtitle">ETHNIC WEAR &amp; CUSTOM MAGAM WORKS</span>
+      </a>
+      <a class="collection-back-link" href="index.html">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        All collections
+      </a>
+      <a class="collection-bag-link" href="index.html#bag" aria-label="Your shopping bag">
+        <i data-lucide="shopping-bag" aria-hidden="true"></i>
+        <span>Bag</span>
+        <span class="collection-bag-count" id="collection-bag-count">0</span>
+      </a>
+    </header>
+
+    <main class="products-main">
+      <section class="products-intro">
+        <p class="section-eyebrow" id="products-eyebrow">THE COUTURE COLLECTION</p>
+        <h1 id="products-title">Explore the Collection</h1>
+        <p id="products-description">Discover special occasion pieces for the whole family.</p>
+        <p class="image-preview-note">Choose an available size and colour for each product before adding it to your bag.</p>
+      </section>
+
+      <section class="products-section" aria-label="Available styles">
+        <div class="products-grid" id="products-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="products-footer">
+      <a href="index.html">Back to Shruthi's Couture</a>
+      <a href="admin.html">Admin</a>
+    </footer>
+    <p class="sr-only" id="products-announcement" role="status" aria-live="polite"></p>
+  </body>
+</html>

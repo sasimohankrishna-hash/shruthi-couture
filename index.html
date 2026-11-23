@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f5ee">
+    <meta
+      name="description"
+      content="Discover Shruthi's Couture's royal ethnic collection, fine fabrics, and bespoke Magam works for the whole family."
+    >
+    <title>Shruthi's Couture | The Wedding Chapter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="supabase-config.js" defer></script>
+    <script src="store-data.js" defer></script>
+    <script src="storefront-api.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div class="announcement" role="note">
+      <p><span aria-hidden="true">✦</span> SHREDHI'S COUTURE <span class="announcement-dot">·</span> EXCLUSIVE ETHNIC WEAR &amp; CUSTOM MAGAM WORKS <span aria-hidden="true">✦</span></p>
+    </div>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#" aria-label="Shruthi's Couture home">
+          <span class="brand-name">SHRUTHI'S COUTURE</span>
+          <span class="brand-subtitle">ETHNIC WEAR &amp; CUSTOM MAGAM WORKS</span>
+        </a>
+
+        <nav class="desktop-nav" aria-label="Main navigation">
+          <a class="nav-link active" href="#home" aria-current="page">Home</a>
+          <span class="dynamic-nav" id="desktop-collection-links"></span>
+          <a class="nav-link" href="#magam-works">Custom Magam Works</a>
+        </nav>
+
+        <div class="header-actions" aria-label="Shopping tools">
+          <button
+            class="icon-button"
+            id="search-toggle"
+            type="button"
+            aria-label="Search products"
+            aria-haspopup="dialog"
+            aria-controls="search-dialog"
+          >
+            <i data-lucide="search" aria-hidden="true"></i>
+          </button>
+          <button class="icon-button cart-toggle" type="button" aria-label="Shopping bag, 0 items" aria-haspopup="dialog" aria-controls="cart-dialog">
+            <i data-lucide="shopping-bag" aria-hidden="true"></i>
+            <span class="cart-count" id="cart-count" hidden>0</span>
+          </button>
+          <a class="icon-button account-button" href="admin.html" aria-label="Admin access">
+            <i data-lucide="user-round" aria-hidden="true"></i>
+          </a>
+          <button
+            class="icon-button menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+            aria-controls="mobile-nav"
+          >
+            <i data-lucide="menu" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation" hidden>
+        <a href="#home" aria-current="page">Home</a>
+        <span class="mobile-dynamic-nav" id="mobile-collection-links"></span>
+        <a href="#magam-works">Custom Magam Works</a>
+      </nav>
+
+      <nav class="mobile-category-nav" aria-label="Shop collections">
+        <div class="mobile-category-links" id="mobile-category-links"></div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="home" aria-labelledby="hero-title">
+        <div class="hero-content">
+          <p class="hero-badge">ETHNIC WEAR, FABRICS &amp; CUSTOM MAGAM WORKS</p>
+          <p class="hero-kicker"><span aria-hidden="true">↞</span> THE <span aria-hidden="true">↠</span></p>
+          <h1 id="hero-title"><span>THE WEDDING</span><span>CHAPTER</span></h1>
+          <div class="hero-divider" aria-hidden="true"><span>✦</span></div>
+          <p class="hero-description">
+            Exclusive Royal Collection for the Whole Family – Men's Kurtas, Kids Ethnic Wears, Fine Fabrics &amp; Bespoke Magam Works.
+          </p>
+          <a class="hero-cta" href="#fabrics">
+            Explore Fabrics <span aria-hidden="true">›</span>
+          </a>
+        </div>
+        <span class="hero-side-note" aria-hidden="true">CRAFTED FOR YOUR MOST BEAUTIFUL MOMENTS</span>
+      </section>
+
+      <section class="collections" id="fabrics" aria-labelledby="collections-title">
+        <div class="section-heading">
+          <p class="section-eyebrow">MADE FOR YOUR MOMENTS</p>
+          <h2 id="collections-title">Discover the Collections</h2>
+          <p>Thoughtful occasion wear and beautiful fabrics for every member of the family.</p>
+        </div>
+
+        <div class="collection-grid" id="collection-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="magam-section" id="magam-works" aria-labelledby="magam-title">
+        <p class="section-eyebrow">HANDCRAFTED JUST FOR YOU</p>
+        <h2 id="magam-title">Custom Magam Works</h2>
+        <p>Intricate, made-to-measure embroidery for the pieces you'll treasure.</p>
+        <form class="customer-enquiry-form" id="customer-enquiry-form">
+          <label>
+            Your name
+            <input id="enquiry-name" name="customerName" maxlength="120" autocomplete="name" required>
+          </label>
+          <label>
+            Phone number
+            <input id="enquiry-phone" name="customerPhone" type="tel" maxlength="25" autocomplete="tel" required>
+          </label>
+          <label>
+            Email (optional)
+            <input id="enquiry-email" name="customerEmail" type="email" maxlength="254" autocomplete="email">
+          </label>
+          <label>
+            How can we help?
+            <textarea id="enquiry-message" name="message" rows="3" maxlength="5000" required></textarea>
+          </label>
+          <button class="hero-cta" id="enquiry-submit" type="submit">Send an enquiry</button>
+          <p id="enquiry-feedback" role="status" aria-live="polite"></p>
+        </form>
+        <a
+          class="magam-whatsapp"
+          href="https://wa.me/919346794749?text=Hi%21%20I%27d%20like%20to%20ask%20about%20Custom%20Magam%20Works."
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i data-lucide="message-circle" aria-hidden="true"></i>
+          Ask about custom work
+        </a>
+      </section>
+    </main>
+
+    <dialog class="cart-dialog" id="search-dialog" aria-labelledby="search-title">
+      <div class="cart-panel">
+        <div class="cart-panel-header">
+          <div>
+            <p class="section-eyebrow">FIND YOUR STYLE</p>
+            <h2 id="search-title">Search products</h2>
+          </div>
+          <button class="cart-close" id="search-close" type="button" aria-label="Close search">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+        <form class="checkout-form" id="product-search-form">
+          <label for="product-search-input">
+            Product name, size or colour
+            <input
+              id="product-search-input"
+              name="search"
+              type="search"
+              maxlength="100"
+              autocomplete="off"
+              aria-describedby="product-search-feedback"
+            >
+          </label>
+          <p class="checkout-result" id="product-search-feedback" role="status" aria-live="polite" hidden></p>
+          <button class="hero-cta" type="submit">Search styles</button>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog class="cart-dialog" id="cart-dialog" aria-labelledby="cart-title">
+      <div class="cart-panel">
+        <div class="cart-panel-header">
+          <div>
+            <p class="section-eyebrow">YOUR SELECTION</p>
+            <h2 id="cart-title">Shopping Bag</h2>
+          </div>
+          <button class="cart-close" id="cart-close" type="button" aria-label="Close shopping bag">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+        <p class="cart-empty" id="cart-empty">Your bag is empty. Add a collection to get started.</p>
+        <ul class="cart-items" id="cart-items" aria-live="polite"></ul>
+        <form class="checkout-form" id="checkout-form">
+          <label>
+            Your name
+            <input id="customer-name" name="name" autocomplete="name" required>
+          </label>
+          <label>
+            Phone number
+            <input id="customer-phone" name="phone" type="tel" autocomplete="tel" required>
+          </label>
+          <button class="cart-whatsapp" id="cart-whatsapp" type="submit" disabled>
+            <i data-lucide="message-circle" aria-hidden="true"></i>
+          Place order &amp; continue to WhatsApp
+          </button>
+        </form>
+        <p class="checkout-result" id="checkout-result" role="status" aria-live="polite" hidden></p>
+        <p class="cart-note">Order totals and availability are confirmed by the store before continuing to WhatsApp.</p>
+      </div>
+    </dialog>
+
+    <a
+      class="whatsapp-float"
+      href="https://wa.me/919346794749?text=Hi%21%20I%27d%20like%20to%20know%20more%20about%20your%20collections."
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Chat with Shruthi's Couture on WhatsApp"
+    >
+      <i data-lucide="message-circle" aria-hidden="true"></i>
+      <span>Chat on WhatsApp</span>
+    </a>
+
+    <p class="sr-only" id="cart-announcement" role="status" aria-live="polite"></p>
+    <footer class="site-footer">
+      <span>© Shruthi's Couture</span>
+      <a href="admin.html">Admin</a>
+    </footer>
+  </body>
+</html>
