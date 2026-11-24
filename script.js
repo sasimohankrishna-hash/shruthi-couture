@@ -55,31 +55,35 @@ function createCollectionNavigation(collections) {
   mobileCollectionLinks.replaceChildren();
   mobileCategoryLinks.replaceChildren();
 
-  collections.forEach((collection) => {
-    const collectionUrl =
-      `collection.html?collection=${encodeURIComponent(collection.slug)}`;
+  const entries =
+    window.CoutureCollectionNavigation.getNavigationEntries(collections);
+  entries.forEach((entry) => {
+    const collectionUrl = entry.collection
+      ? `collection.html?collection=${encodeURIComponent(entry.collection.slug)}`
+      : "#fabrics";
     const desktopLink = document.createElement("a");
     desktopLink.className = "nav-link";
     desktopLink.href = collectionUrl;
-    desktopLink.textContent = collection.name;
-    desktopLink.target = "_blank";
-    desktopLink.rel = "noopener noreferrer";
+    desktopLink.textContent = entry.name;
     desktopCollectionLinks.append(desktopLink);
 
     const mobileLink = document.createElement("a");
     mobileLink.href = collectionUrl;
-    mobileLink.textContent = collection.name;
-    mobileLink.target = "_blank";
-    mobileLink.rel = "noopener noreferrer";
+    mobileLink.textContent = entry.name;
     mobileCollectionLinks.append(mobileLink);
 
     const mobileCategoryLink = document.createElement("a");
     mobileCategoryLink.className = "mobile-category-link";
     mobileCategoryLink.href = collectionUrl;
-    mobileCategoryLink.textContent = collection.name;
-    mobileCategoryLink.target = "_blank";
-    mobileCategoryLink.rel = "noopener noreferrer";
+    mobileCategoryLink.textContent = entry.name;
     mobileCategoryLinks.append(mobileCategoryLink);
+
+    if (entry.collection) {
+      [desktopLink, mobileLink, mobileCategoryLink].forEach((link) => {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      });
+    }
   });
 }
 

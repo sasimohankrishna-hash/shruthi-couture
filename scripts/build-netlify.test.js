@@ -66,6 +66,10 @@ test("Netlify build replaces stale dist contents without modifying root config",
       true,
     );
     assert.equal(
+      fs.existsSync(path.join(outputDir, "collection-navigation.js")),
+      true,
+    );
+    assert.equal(
       fs.existsSync(path.join(outputDir, "password-recovery.js")),
       true,
     );

@@ -8,6 +8,7 @@ const FRONTEND_FILES = [
   "admin-order-table.js",
   "admin.css",
   "admin.html",
+  "collection-navigation.js",
   "collection.html",
   "collection.js",
   "index.html",
