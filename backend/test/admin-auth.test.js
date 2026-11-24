@@ -1,6 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createAdminAuth } = require("../../admin-auth");
+const {
+  createAdminAuth,
+  passwordRecoveryRedirectUrl,
+} = require("../../admin-auth");
 
 const ownerSession = {
   access_token: "owner-access-token",
@@ -10,10 +13,11 @@ const ownerSession = {
 function createSupabaseMock({
   session = ownerSession,
   signInError = null,
+  passwordResetError = null,
   sessionError = null,
   signOutError = null,
 } = {}) {
-  const calls = { login: [], signOut: 0 };
+  const calls = { login: [], passwordResets: [], signOut: 0 };
   return {
     calls,
     client: {
@@ -21,6 +25,10 @@ function createSupabaseMock({
         async signInWithPassword(credentials) {
           calls.login.push(credentials);
           return { data: { session }, error: signInError };
+        },
+        async resetPasswordForEmail(email, options) {
+          calls.passwordResets.push({ email, options });
+          return { error: passwordResetError };
         },
         async getSession() {
           return { data: { session }, error: sessionError };
@@ -33,6 +41,56 @@ function createSupabaseMock({
     },
   };
 }
+
+test("password recovery sends the supplied email and callback URL to Supabase", async () => {
+  const fake = createSupabaseMock();
+  const auth = createAdminAuth({
+    supabase: fake.client,
+    apiBaseUrl: "http://localhost:5000",
+  });
+
+  await auth.requestPasswordReset(
+    "owner@example.com",
+    "https://shruthi-couture.netlify.app/reset-password.html",
+  );
+
+  assert.deepEqual(fake.calls.passwordResets, [
+    {
+      email: "owner@example.com",
+      options: {
+        redirectTo: "https://shruthi-couture.netlify.app/reset-password.html",
+      },
+    },
+  ]);
+});
+
+test("password recovery callback URL follows the current local or deployed origin", () => {
+  assert.equal(
+    passwordRecoveryRedirectUrl("http://localhost:5500/admin.html"),
+    "http://localhost:5500/reset-password.html",
+  );
+  assert.equal(
+    passwordRecoveryRedirectUrl(
+      "https://shruthi-couture.netlify.app/admin.html",
+    ),
+    "https://shruthi-couture.netlify.app/reset-password.html",
+  );
+});
+
+test("password recovery surfaces Supabase errors", async () => {
+  const fake = createSupabaseMock({
+    passwordResetError: { code: "over_email_send_rate_limit" },
+  });
+  const auth = createAdminAuth({
+    supabase: fake.client,
+    apiBaseUrl: "http://localhost:5000",
+  });
+
+  await assert.rejects(
+    auth.requestPasswordReset("owner@example.com", "http://localhost:5500/reset-password.html"),
+    { message: "Too many recovery emails were requested. Please wait before trying again." },
+  );
+});
 
 function successfulResponse(data = { isAdmin: true, email: ownerSession.user.email }) {
   return new Response(

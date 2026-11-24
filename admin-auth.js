@@ -34,6 +34,29 @@
     return "Sign-in failed. Check your credentials and try again.";
   }
 
+  function passwordResetErrorMessage(error) {
+    const code = String(error?.code || error?.name || "").toLowerCase();
+    const message = String(error?.message || "").toLowerCase();
+    if (
+      error instanceof TypeError ||
+      /network|fetch|timeout|connection/.test(`${code} ${message}`)
+    ) {
+      return "Unable to connect to Supabase. Check your network and try again.";
+    }
+    if (
+      code.includes("rate_limit") ||
+      message.includes("rate limit") ||
+      message.includes("too many")
+    ) {
+      return "Too many recovery emails were requested. Please wait before trying again.";
+    }
+    return "Unable to send a password recovery email. Check the email address and try again.";
+  }
+
+  function passwordRecoveryRedirectUrl(currentUrl) {
+    return new URL("reset-password.html", currentUrl).toString();
+  }
+
   function validateApiUrl(apiBaseUrl) {
     let url;
     try {
@@ -154,6 +177,20 @@
       return verifyAdminSession(sessionResult.data.session);
     }
 
+    async function requestPasswordReset(email, redirectTo) {
+      let result;
+      try {
+        result = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo,
+        });
+      } catch (error) {
+        throw new Error(passwordResetErrorMessage(error));
+      }
+      if (result.error) {
+        throw new Error(passwordResetErrorMessage(result.error));
+      }
+    }
+
     async function restore() {
       let result;
       try {
@@ -216,7 +253,7 @@
       return response;
     }
 
-    return { login, restore, logout, request };
+    return { login, requestPasswordReset, restore, logout, request };
   }
 
   function startAdminPage({ root, createClient }) {
@@ -226,6 +263,9 @@
     const emailInput = root.document.querySelector("#admin-login-email");
     const passwordInput = root.document.querySelector("#admin-login-password");
     const submitButton = root.document.querySelector("#admin-login-submit");
+    const forgotPasswordButton = root.document.querySelector(
+      "#admin-forgot-password",
+    );
     const message = root.document.querySelector("#admin-auth-message");
     const account = root.document.querySelector("#admin-account");
     const accountEmail = root.document.querySelector("#admin-account-email");
@@ -319,6 +359,31 @@
       }
     });
 
+    forgotPasswordButton.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email || !emailInput.checkValidity()) {
+        emailInput.reportValidity();
+        return;
+      }
+
+      forgotPasswordButton.disabled = true;
+      submitButton.disabled = true;
+      message.classList.remove("is-success");
+      message.textContent = "";
+      try {
+        const redirectTo = passwordRecoveryRedirectUrl(root.location.href);
+        await auth.requestPasswordReset(email, redirectTo);
+        message.classList.add("is-success");
+        message.textContent =
+          "If an account exists for this email, a password recovery link is on its way.";
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        forgotPasswordButton.disabled = false;
+        submitButton.disabled = false;
+      }
+    });
+
     logoutButton.addEventListener("click", async () => {
       logoutButton.disabled = true;
       try {
@@ -345,5 +410,11 @@
       .catch((error) => showLogin(error.message));
   }
 
-  return { AdminAuthError, authErrorMessage, createAdminAuth, startAdminPage };
+  return {
+    AdminAuthError,
+    authErrorMessage,
+    createAdminAuth,
+    passwordRecoveryRedirectUrl,
+    startAdminPage,
+  };
 });

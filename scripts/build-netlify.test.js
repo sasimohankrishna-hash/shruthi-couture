@@ -35,6 +35,14 @@ test("Netlify build writes the HTTPS API origin into a frontend-only artifact", 
     assert.equal(fs.existsSync(path.join(outputDir, "backend")), false);
     assert.equal(fs.existsSync(path.join(outputDir, ".env")), false);
     assert.equal(fs.existsSync(path.join(outputDir, "PRE_DEPLOYMENT_REPORT.md")), false);
+    assert.equal(
+      fs.existsSync(path.join(outputDir, "reset-password.html")),
+      true,
+    );
+    assert.equal(
+      fs.existsSync(path.join(outputDir, "password-recovery.js")),
+      true,
+    );
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }

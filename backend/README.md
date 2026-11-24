@@ -58,6 +58,15 @@ frontend deployment. The Netlify build requires `COUTURE_API_BASE_URL` to be
 set to this same HTTPS backend origin in the Netlify build environment; the
 build publishes only the allow-listed frontend files to `dist`.
 
+For Admin Panel password recovery, configure Supabase Authentication's URL
+Configuration with the deployed site URL
+`https://shruthi-couture.netlify.app` and allow
+`https://shruthi-couture.netlify.app/reset-password.html` as a redirect URL.
+For local development, also allow the recovery URL on the origin serving
+`admin.html` (for example, `http://localhost:5500/reset-password.html`).
+The recovery page is a static HTML file included in the Netlify build, so it
+does not require an SPA redirect rule.
+
 ## API
 
 All responses use `{ "success": boolean, "message": string, "data": ... }`.
