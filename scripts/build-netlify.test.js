@@ -59,6 +59,12 @@ test("Netlify build replaces stale dist contents without modifying root config",
     assert.equal(fs.existsSync(path.join(outputDir, "backend")), false);
     assert.equal(fs.existsSync(path.join(outputDir, ".env")), false);
     assert.equal(fs.existsSync(path.join(outputDir, "PRE_DEPLOYMENT_REPORT.md")), false);
+    const adminScript = fs.readFileSync(
+      path.join(outputDir, "admin.js"),
+      "utf8",
+    );
+    assert.match(adminScript, /collectionForm\.addEventListener\("submit"/);
+    assert.match(adminScript, /event\.preventDefault\(\)/);
     assert.equal(fs.existsSync(path.join(outputDir, "netlify.toml")), false);
     assert.equal(fs.existsSync(path.join(outputDir, "stale-output.txt")), false);
     assert.equal(

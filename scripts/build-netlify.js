@@ -5,6 +5,7 @@ const FRONTEND_FILES = [
   "_headers",
   "admin-auth-entry.mjs",
   "admin-auth.js",
+  "admin.js",
   "admin-order-table.js",
   "admin.css",
   "admin.html",
