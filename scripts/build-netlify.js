@@ -48,30 +48,25 @@ function validateApiOrigin(value) {
 }
 
 function prepareOutputDirectory(outputDir, projectRoot) {
+  const resolvedRoot = path.resolve(projectRoot);
   const resolvedOutput = path.resolve(outputDir);
-  const relativeOutput = path.relative(projectRoot, resolvedOutput);
-  if (
-    !relativeOutput ||
-    relativeOutput.startsWith("..") ||
-    path.isAbsolute(relativeOutput)
-  ) {
-    throw new Error("The frontend build output must be a subdirectory of the project.");
+  if (resolvedOutput !== path.join(resolvedRoot, "dist")) {
+    throw new Error("The frontend build output must be the project's dist directory.");
   }
 
+  let outputStats;
+  try {
+    outputStats = fs.lstatSync(resolvedOutput);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  if (outputStats) {
+    if (!outputStats.isDirectory() || outputStats.isSymbolicLink()) {
+      throw new Error("Refusing to clean a non-directory Netlify build output.");
+    }
+    fs.rmSync(resolvedOutput, { recursive: true, force: true });
+  }
   fs.mkdirSync(resolvedOutput, { recursive: true });
-  for (const name of fs.readdirSync(resolvedOutput)) {
-    if (!FRONTEND_FILES.includes(name)) {
-      throw new Error(
-        `Refusing to overwrite unexpected build output: ${name}`,
-      );
-    }
-
-    const filePath = path.join(resolvedOutput, name);
-    if (!fs.lstatSync(filePath).isFile()) {
-      throw new Error(`Refusing to overwrite non-file build output: ${name}`);
-    }
-    fs.unlinkSync(filePath);
-  }
 }
 
 function buildNetlifySite({
