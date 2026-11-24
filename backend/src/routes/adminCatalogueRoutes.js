@@ -55,10 +55,14 @@ function createAdminCatalogueRoutes(
     textRule("name", 120, true),
     slugRule("slug"),
     textRule("description", 5000),
-    body("coverImageUrl").optional({ values: "null" }).isURL({
-      protocols: ["http", "https"],
-      require_protocol: true,
-    }).withMessage("coverImageUrl must be an HTTP or HTTPS URL"),
+    body("coverImageUrl")
+      .optional({ values: "null" })
+      .if((value) => value !== "")
+      .isURL({
+        protocols: ["http", "https"],
+        require_protocol: true,
+      })
+      .withMessage("coverImageUrl must be an HTTP or HTTPS URL"),
     optionalBoolean("isActive"),
     optionalSortOrder(),
     strictBody(["name", "slug", "description", "coverImageUrl", "isActive", "sortOrder"]),
@@ -74,10 +78,13 @@ function createAdminCatalogueRoutes(
     body("slug").optional().isString().trim().isLength({ min: 1, max: 120 })
       .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     textRule("description", 5000),
-    body("coverImageUrl").optional({ values: "null" }).isURL({
-      protocols: ["http", "https"],
-      require_protocol: true,
-    }),
+    body("coverImageUrl")
+      .optional({ values: "null" })
+      .if((value) => value !== "")
+      .isURL({
+        protocols: ["http", "https"],
+        require_protocol: true,
+      }),
     optionalBoolean("isActive"),
     optionalSortOrder(),
     strictBody(["name", "slug", "description", "coverImageUrl", "isActive", "sortOrder"]),

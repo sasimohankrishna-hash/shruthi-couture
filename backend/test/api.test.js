@@ -1055,6 +1055,37 @@ test("catalogue admin APIs reject missing tokens and non-admins before table acc
   });
 });
 
+test("admin can create a collection with an empty optional cover image URL", async () => {
+  await withServer(async (baseUrl, fake) => {
+    fake.authentication.result = {
+      data: { user: { id: "owner-user" } },
+      error: null,
+    };
+
+    const response = await fetch(`${baseUrl}/api/admin/collections`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer owner-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Men's Kurtas",
+        slug: "mens-kurtas",
+        description: "",
+        coverImageUrl: "",
+        isActive: true,
+      }),
+    });
+
+    assert.equal(response.status, 201);
+    const payload = await response.json();
+    assert.equal(payload.data.name, "Men's Kurtas");
+    assert.equal(payload.data.slug, "mens-kurtas");
+    assert.equal(payload.data.cover_image_url, null);
+    assert.equal(fake.rows.collections.at(-1).cover_image_url, null);
+  });
+});
+
 test("admin product activation updates use an authenticated admin and existing product UUID", async () => {
   await withServer(async (baseUrl, fake) => {
     fake.authentication.result = {
