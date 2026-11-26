@@ -104,14 +104,28 @@ function createAdminCatalogueRoutes(
     ...admin,
     body("collectionId").isUUID().withMessage("collectionId must be a UUID"),
     textRule("name", 160, true),
-    slugRule("slug"),
-    textRule("description", 5000),
+    body("slug")
+      .custom((value) => {
+        if (value === undefined || value === null) return true;
+        if (typeof value !== "string") return false;
+        const slug = value.trim();
+        return (
+          slug === "" ||
+          (slug.length <= 120 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))
+        );
+      })
+      .withMessage("Use a lowercase slug with letters, numbers, and hyphens"),
+    textRule("description", 5000, true),
+    body("price").optional().isFloat({ gt: 0 }).toFloat()
+      .withMessage("price must be greater than zero"),
+    body("stock").optional().isInt({ min: 0 }).toInt()
+      .withMessage("stock must be a non-negative integer"),
     optionalBoolean("isActive"),
     optionalBoolean("isFeatured"),
     optionalSortOrder(),
     strictBody([
       "collectionId", "name", "slug", "description", "isActive",
-      "isFeatured", "sortOrder",
+      "price", "stock", "isFeatured", "sortOrder",
     ]),
     validateRequest,
     controller.createProduct,
@@ -126,12 +140,14 @@ function createAdminCatalogueRoutes(
     body("slug").optional().isString().trim().isLength({ min: 1, max: 120 })
       .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     textRule("description", 5000),
+    body("price").optional().isFloat({ gt: 0 }).toFloat(),
+    body("stock").optional().isInt({ min: 0 }).toInt(),
     optionalBoolean("isActive"),
     optionalBoolean("isFeatured"),
     optionalSortOrder(),
     strictBody([
       "collectionId", "name", "slug", "description", "isActive",
-      "isFeatured", "sortOrder",
+      "price", "stock", "isFeatured", "sortOrder",
     ]),
     validateRequest,
     controller.updateProduct,
@@ -179,11 +195,13 @@ function createAdminCatalogueRoutes(
     "/products/:productId/variants",
     ...admin,
     id("productId"),
-    textRule("sku", 120, true),
+    textRule("sku", 120),
     textRule("size", 80),
     textRule("color", 80),
-    body("price").isFloat({ gt: 0 }).toFloat().withMessage("price must be greater than zero"),
-    body("stock").isInt({ min: 0 }).toInt().withMessage("stock must be a non-negative integer"),
+    body("price").optional().isFloat({ gt: 0 }).toFloat()
+      .withMessage("price must be greater than zero"),
+    body("stock").optional().isInt({ min: 0 }).toInt()
+      .withMessage("stock must be a non-negative integer"),
     optionalBoolean("isActive"),
     strictBody(["sku", "size", "color", "price", "stock", "isActive"]),
     validateRequest,

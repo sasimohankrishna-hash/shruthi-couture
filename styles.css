@@ -74,25 +74,48 @@ button {
 }
 
 .brand {
-  display: flex;
+  display: grid;
   width: fit-content;
-  flex-direction: column;
-  gap: 5px;
+  grid-template-columns: auto 30px auto;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
   color: var(--wine);
 }
 
 .brand-name {
+  display: block;
   font-family: var(--serif);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.045em;
   line-height: 0.95;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: grid;
+  width: 30px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #d8bc7c;
+  border-radius: 50%;
+  color: #f8f0db;
+  background: var(--wine);
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.08em;
+  line-height: 1;
 }
 
 .brand-subtitle {
+  grid-column: 1 / -1;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.16em;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .desktop-nav {
@@ -1061,8 +1084,36 @@ button {
     font-size: 6px;
   }
 
+  .header-inner {
+    width: calc(100% - 24px);
+    gap: 4px;
+  }
+
+  .header-actions {
+    gap: 4px;
+  }
+
+  .header-actions .icon-button {
+    width: 26px;
+  }
+
+  .brand {
+    grid-template-columns: auto 22px auto;
+    column-gap: 3px;
+  }
+
   .brand-name {
-    font-size: 19px;
+    font-size: 15px;
+  }
+
+  .brand-mark {
+    width: 22px;
+    font-size: 9px;
+  }
+
+  .brand-subtitle {
+    font-size: 5px;
+    letter-spacing: 0.08em;
   }
 
   .hero {
@@ -1238,6 +1289,13 @@ button {
   color: #806334;
   font-size: 10px;
   font-weight: 600;
+}
+
+.product-stock-note {
+  min-height: 12px;
+  margin: 4px 0 0;
+  color: #6d5e54;
+  font-size: 9px;
 }
 
 .variant-option-label {

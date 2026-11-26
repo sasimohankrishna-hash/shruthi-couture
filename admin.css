@@ -377,6 +377,29 @@ select {
   resize: vertical;
 }
 
+.optional-variant-fields {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid rgba(92, 17, 24, 0.16);
+}
+
+.optional-variant-fields legend {
+  padding: 0 5px;
+  color: var(--wine);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.optional-variant-fields .form-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
 .image-upload-progress {
   width: 100%;
   height: 8px;

@@ -131,8 +131,10 @@
               </div>
               <label>Collection<select id="product-collection" required></select></label>
               <label>Product name<input id="product-name" maxlength="160" required></label>
-              <label>URL slug<input id="product-slug" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required></label>
-              <label>Description<textarea id="product-description" rows="3" maxlength="5000"></textarea></label>
+              <label>URL slug (optional)<input id="product-slug" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
+              <label>Description<textarea id="product-description" rows="3" maxlength="5000" required></textarea></label>
+              <label>Product price (INR, optional)<input id="product-price" type="number" min="0.01" step="0.01"></label>
+              <label>Product stock (optional)<input id="product-stock" type="number" min="0" step="1"></label>
               <label>
                 Upload product image (JPEG, PNG, or WebP; max 5 MB)
                 <input
@@ -156,9 +158,18 @@
               ></p>
               <label>Image URL (optional)<input id="product-image-url" type="url" inputmode="url"></label>
               <label>Image alt text<input id="product-image-alt" maxlength="240"></label>
+              <fieldset class="optional-variant-fields" id="initial-variant-fields">
+                <legend>Optional first size/colour variant</legend>
+                <p class="form-help">Leave these blank to create the product without a variant. Variant pricing and stock can use the product values below unless overridden.</p>
+                <label>SKU<input id="initial-variant-sku" maxlength="120"></label>
+                <label>Size<input id="initial-variant-size" maxlength="80"></label>
+                <label>Colour<input id="initial-variant-color" maxlength="80"></label>
+                <label>Variant price (INR, optional)<input id="initial-variant-price" type="number" min="0.01" step="0.01"></label>
+                <label>Variant stock (optional)<input id="initial-variant-stock" type="number" min="0" step="1"></label>
+              </fieldset>
               <label class="checkbox-label"><input id="product-active" type="checkbox" checked> Active on storefront</label>
               <label class="checkbox-label"><input id="product-featured" type="checkbox"> Featured product</label>
-              <label>Sort order<input id="product-sort-order" type="number" min="0" step="1" value="0" required></label>
+              <label>Sort order<input id="product-sort-order" type="number" min="0" step="1" value="0"></label>
               <button class="primary-button" type="submit">Save product</button>
             </form>
 
@@ -169,11 +180,11 @@
                 <button class="text-button" id="cancel-variant-edit" type="button" hidden>Cancel edit</button>
               </div>
               <label>Product<select id="variant-product" required></select></label>
-              <label>SKU<input id="variant-sku" maxlength="120" required></label>
+              <label>SKU (optional)<input id="variant-sku" maxlength="120"></label>
               <label>Size (optional)<input id="variant-size" maxlength="80"></label>
               <label>Colour (optional)<input id="variant-color" maxlength="80"></label>
-              <label>Price (INR)<input id="variant-price" type="number" min="0.01" step="0.01" required></label>
-              <label>Stock<input id="variant-stock" type="number" min="0" step="1" required></label>
+              <label>Price (INR, optional)<input id="variant-price" type="number" min="0.01" step="0.01"></label>
+              <label>Stock (optional)<input id="variant-stock" type="number" min="0" step="1"></label>
               <label class="checkbox-label"><input id="variant-active" type="checkbox" checked> Active and available</label>
               <button class="primary-button" type="submit">Save variant</button>
             </form>

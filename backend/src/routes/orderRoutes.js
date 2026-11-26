@@ -53,36 +53,54 @@ function createOrderRoutes(
       .withMessage("Enter a valid phone number"),
     body("items")
       .isArray({ min: 1, max: 50 })
-      .withMessage("Items must contain between 1 and 50 variants"),
+      .withMessage("Items must contain between 1 and 50 products or variants"),
     body("items").custom((items) => {
       if (!Array.isArray(items)) return true;
-      const variantIds = items
-        .map((item) =>
-          typeof item?.variantId === "string"
-            ? item.variantId.toLowerCase()
-            : null,
-        )
+      const itemIds = items
+        .map((item) => {
+          if (typeof item?.variantId === "string") {
+            return `variant:${item.variantId.toLowerCase()}`;
+          }
+          if (typeof item?.productId === "string") {
+            return `product:${item.productId.toLowerCase()}`;
+          }
+          return null;
+        })
         .filter(Boolean);
-      if (new Set(variantIds).size !== variantIds.length) {
-        throw new Error("Each variantId may appear only once");
+      if (new Set(itemIds).size !== itemIds.length) {
+        throw new Error("Each product or variant may appear only once");
       }
       return true;
     }),
     body("items.*")
       .custom((item) => {
+        const hasVariantId =
+          item && typeof item === "object" && Object.hasOwn(item, "variantId");
+        const hasProductId =
+          item && typeof item === "object" && Object.hasOwn(item, "productId");
+        const selectedId = hasVariantId ? item.variantId : item?.productId;
         if (
           !item ||
           typeof item !== "object" ||
           Array.isArray(item) ||
-          Object.keys(item).some((key) => !["variantId", "quantity"].includes(key))
+          Object.keys(item).some(
+            (key) => !["variantId", "productId", "quantity"].includes(key),
+          ) ||
+          hasVariantId === hasProductId ||
+          typeof selectedId !== "string"
         ) {
-          throw new Error("Each item may contain only variantId and quantity");
+          throw new Error("Each item must contain exactly one productId or variantId");
         }
         return true;
       }),
     body("items.*.variantId")
+      .optional()
       .isUUID()
       .withMessage("Each variantId must be a UUID"),
+    body("items.*.productId")
+      .optional()
+      .isUUID()
+      .withMessage("Each productId must be a UUID"),
     body("items.*.quantity")
       .custom(
         (value) =>

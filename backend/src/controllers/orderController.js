@@ -6,23 +6,59 @@ function createOrderController(
 ) {
   async function create(req, res, next) {
     try {
-      const variantIds = [...new Set(req.body.items.map((item) => item.variantId))];
-      const { data: variants, error: variantsError } = await supabase
-        .from("product_variants")
-        .select("id,size,color")
-        .in("id", variantIds)
-        .eq("is_active", true);
+      const variantIds = [
+        ...new Set(req.body.items.map((item) => item.variantId).filter(Boolean)),
+      ];
+      const productIds = [
+        ...new Set(req.body.items.map((item) => item.productId).filter(Boolean)),
+      ];
+      const [variantsResult, productsResult] = await Promise.all([
+        variantIds.length
+          ? supabase
+            .from("product_variants")
+            .select("id")
+            .in("id", variantIds)
+            .eq("is_active", true)
+          : Promise.resolve({ data: [], error: null }),
+        productIds.length
+          ? supabase
+            .from("products")
+            .select("id,price,stock")
+            .in("id", productIds)
+            .eq("is_active", true)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-      if (variantsError) {
-        throw new ApiError(502, "Could not verify requested variants");
+      if (variantsResult.error || productsResult.error) {
+        throw new ApiError(502, "Could not verify requested products");
       }
 
-      if ((variants || []).length !== variantIds.length) {
+      if ((variantsResult.data || []).length !== variantIds.length) {
         throw new ApiError(409, "A requested variant is unavailable");
+      }
+      if ((productsResult.data || []).length !== productIds.length) {
+        throw new ApiError(409, "A requested product is unavailable");
+      }
+
+      const productsById = new Map(
+        (productsResult.data || []).map((product) => [product.id, product]),
+      );
+      for (const item of req.body.items.filter((entry) => entry.productId)) {
+        const product = productsById.get(item.productId);
+        if (
+          !Number.isFinite(Number(product.price)) ||
+          Number(product.price) <= 0 ||
+          !Number.isInteger(product.stock) ||
+          product.stock < item.quantity
+        ) {
+          throw new ApiError(409, "A requested product is unavailable");
+        }
       }
 
       const items = req.body.items.map((item) => ({
-        variant_id: item.variantId,
+        ...(item.variantId
+          ? { variant_id: item.variantId }
+          : { product_id: item.productId }),
         quantity: item.quantity,
       }));
 

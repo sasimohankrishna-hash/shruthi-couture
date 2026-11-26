@@ -3,7 +3,7 @@ const { ApiError } = require("../middleware/errorHandler");
 const COLLECTION_FIELDS =
   "id,slug,name,description,cover_image_url,is_active,sort_order";
 const PRODUCT_FIELDS =
-  "id,collection_id,slug,name,description,is_active,sort_order";
+  "id,collection_id,slug,name,description,price,stock,is_active,sort_order";
 
 function redactSensitiveText(value) {
   return value

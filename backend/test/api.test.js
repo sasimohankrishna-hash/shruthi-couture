@@ -19,6 +19,7 @@ test("CORS accepts exact HTTPS origins and local development origins only", () =
 
 const orderId = "11111111-1111-4111-8111-111111111111";
 const productId = "22222222-2222-4222-8222-222222222222";
+const unvariantProductId = "44444444-4444-4444-8444-444444444444";
 const variantId = "33333333-3333-4333-8333-333333333333";
 const optionalVariantId = "88888888-8888-4888-8888-888888888888";
 const inactiveVariantId = "77777777-7777-4777-8777-777777777777";
@@ -60,6 +61,8 @@ function createFakeSupabase() {
       "slug",
       "name",
       "description",
+      "price",
+      "stock",
       "is_active",
       "is_featured",
       "sort_order",
@@ -137,15 +140,19 @@ function createFakeSupabase() {
         slug: "silk-kurta",
         name: "Silk Kurta",
         description: "Test fixture",
+        price: null,
+        stock: null,
         is_active: true,
         sort_order: 1,
       },
       {
-        id: "55555555-5555-4555-8555-555555555555",
+        id: unvariantProductId,
         collection_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         slug: "cotton-dupatta",
         name: "Cotton Dupatta",
         description: "Another product",
+        price: 1750,
+        stock: 5,
         is_active: true,
         sort_order: 2,
       },
@@ -358,46 +365,54 @@ function createFakeSupabase() {
       let total = 0;
       const snapshots = [];
       for (const item of args.p_items) {
-        const variant = rows.product_variants.find(
-          (entry) => entry.id === item.variant_id,
-        );
-        const product = rows.products.find(
-          (entry) => entry.id === variant?.product_id,
-        );
+        const variant = item.variant_id
+          ? rows.product_variants.find(
+            (entry) => entry.id === item.variant_id,
+          )
+          : null;
+        const product = item.product_id
+          ? rows.products.find((entry) => entry.id === item.product_id)
+          : rows.products.find((entry) => entry.id === variant?.product_id);
         const collection = rows.collections.find(
           (entry) => entry.id === product?.collection_id,
         );
+        const price = variant ? variant.price : product?.price;
+        const stock = variant ? variant.stock : product?.stock;
         if (
-          !variant?.is_active ||
+          (variant && !variant.is_active) ||
+          (!variant &&
+            rows.product_variants.some(
+              (entry) => entry.product_id === product?.id && entry.is_active,
+            )) ||
           !product?.is_active ||
           !collection?.is_active ||
-          !Number.isFinite(variant.price) ||
-          variant.price <= 0 ||
-          variant.stock < 0 ||
-          variant.stock < item.quantity
+          !Number.isFinite(price) ||
+          price <= 0 ||
+          !Number.isInteger(stock) ||
+          stock < item.quantity
         ) {
           return {
             data: null,
             error: {
               message:
-                variant?.price <= 0
+                price <= 0
                   ? "Product price must be positive"
                   : "A product is unavailable or stock is insufficient",
             },
           };
         }
-        total += variant.price * item.quantity;
+        total += price * item.quantity;
         snapshots.push({
           id: `item-${snapshots.length + 1}`,
           order_id: orderId,
           product_id: product.id,
-          variant_id: variant.id,
+          variant_id: variant?.id || null,
           product_name: product.name,
-          selected_size: variant.size,
-          selected_color: variant.color,
+          selected_size: variant?.size || null,
+          selected_color: variant?.color || null,
           quantity: item.quantity,
-          product_price: variant.price,
-          line_total: variant.price * item.quantity,
+          product_price: price,
+          line_total: price * item.quantity,
         });
       }
 
@@ -728,6 +743,80 @@ test("valid order uses database prices and leaves stock unchanged", async () => 
     ]);
     assert.equal(Object.hasOwn(fake.calls.rpc[0].args.p_items[0], "price"), false);
     assert.equal(fake.rows.product_variants[0].stock, 4);
+  });
+});
+
+test("variantless products use product-level price and stock for orders", async () => {
+  await withServer(async (baseUrl, fake) => {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        customerName: "Customer",
+        customerPhone: "+919999999999",
+        items: [{ productId: unvariantProductId, quantity: 2 }],
+      }),
+    });
+
+    assert.equal(response.status, 201);
+    const payload = await response.json();
+    assert.equal(payload.data.total_amount, 3500);
+    assert.equal(payload.data.items[0].product_id, unvariantProductId);
+    assert.equal(payload.data.items[0].variant_id, null);
+    assert.equal(payload.data.items[0].selected_size, null);
+    assert.equal(payload.data.items[0].selected_color, null);
+    assert.deepEqual(fake.calls.rpc[0].args.p_items, [
+      { product_id: unvariantProductId, quantity: 2 },
+    ]);
+  });
+});
+
+test("variant and variantless products can be ordered together", async () => {
+  await withServer(async (baseUrl, fake) => {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        customerName: "Customer",
+        customerPhone: "+919999999999",
+        items: [
+          { variantId, quantity: 1 },
+          { productId: unvariantProductId, quantity: 1 },
+        ],
+      }),
+    });
+
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).data.total_amount, 4250);
+    assert.deepEqual(fake.calls.rpc[0].args.p_items, [
+      { variant_id: variantId, quantity: 1 },
+      { product_id: unvariantProductId, quantity: 1 },
+    ]);
+    assert.equal(fake.rows.order_items[1].product_id, unvariantProductId);
+    assert.equal(fake.rows.order_items[1].variant_id, null);
+  });
+});
+
+test("variantless products without a valid price or stock cannot be ordered", async () => {
+  await withServer(async (baseUrl, fake) => {
+    for (const invalid of [{ price: null }, { stock: null }, { stock: 0 }]) {
+      Object.assign(
+        fake.rows.products.find((product) => product.id === unvariantProductId),
+        invalid,
+      );
+      const response = await fetch(`${baseUrl}/api/orders`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          customerName: "Customer",
+          customerPhone: "+919999999999",
+          items: [{ productId: unvariantProductId, quantity: 1 }],
+        }),
+      });
+
+      assert.equal(response.status, 409);
+      assert.equal(fake.calls.rpc.length, 0);
+    }
   });
 });
 
@@ -1181,6 +1270,65 @@ test("admin product variant validation rejects negative price and unsupported fi
 
     assert.equal(response.status, 400);
     assert.equal(fake.rows.product_variants.length, 3);
+  });
+});
+
+test("admin creates products with required fields only and generates a slug", async () => {
+  await withServer(async (baseUrl, fake) => {
+    fake.authentication.result = {
+      data: { user: { id: "owner-user" } },
+      error: null,
+    };
+    const response = await fetch(`${baseUrl}/api/admin/products`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer owner-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        collectionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        name: "New Dress",
+        slug: "",
+        description: "A new collection piece",
+      }),
+    });
+
+    assert.equal(response.status, 201);
+    const payload = await response.json();
+    assert.equal(payload.data.slug, "new-dress");
+    assert.equal(payload.data.price, null);
+    assert.equal(payload.data.stock, null);
+    const saved = fake.rows.products.find((product) => product.slug === "new-dress");
+    assert.ok(saved);
+    assert.equal(fake.rows.product_variants.length, 3);
+  });
+});
+
+test("admin can save a size/colour/price/stock-free variant and receives an SKU", async () => {
+  await withServer(async (baseUrl, fake) => {
+    fake.authentication.result = {
+      data: { user: { id: "owner-user" } },
+      error: null,
+    };
+    const response = await fetch(
+      `${baseUrl}/api/admin/products/${productId}/variants`,
+      {
+        method: "POST",
+        headers: {
+          authorization: "Bearer owner-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({}),
+      },
+    );
+
+    assert.equal(response.status, 201);
+    const saved = fake.rows.product_variants[3];
+    assert.match(saved.sku, /^SC-[A-F0-9]{12}$/);
+    assert.equal(saved.size, null);
+    assert.equal(saved.color, null);
+    assert.equal(saved.price, null);
+    assert.equal(saved.stock, 0);
   });
 });
 

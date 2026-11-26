@@ -2,7 +2,7 @@ const { ApiError } = require("../middleware/errorHandler");
 const { findCollection, isUuid } = require("./collectionController");
 
 const PRODUCT_FIELDS =
-  "id,collection_id,slug,name,description,is_active,sort_order";
+  "id,collection_id,slug,name,description,price,stock,is_active,sort_order";
 const IMAGE_FIELDS =
   "id,product_id,image_url,cloudinary_public_id,alt_text,sort_order";
 const VARIANT_FIELDS =

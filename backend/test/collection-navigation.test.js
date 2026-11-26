@@ -6,14 +6,15 @@ const {
 
 test("featured category links remain visible when the API has no collections", () => {
   assert.deepEqual(
-    getNavigationEntries([]).map(({ name, collection }) => ({
+    getNavigationEntries([]).map(({ name, slug, collection }) => ({
       name,
+      slug,
       collection,
     })),
     [
-      { name: "Men's Kurtas", collection: null },
-      { name: "Kids Ethnic", collection: null },
-      { name: "Fine Fabrics", collection: null },
+      { name: "Men's Kurtas", slug: "mens-kurtas", collection: null },
+      { name: "Kids Ethnic", slug: "kids-ethnic-wear", collection: null },
+      { name: "Fine Fabrics", slug: "fine-fabrics", collection: null },
     ],
   );
 });
@@ -29,10 +30,10 @@ test("featured links use matching collection records and retain other collection
   assert.deepEqual(
     getNavigationEntries(collections),
     [
-      { name: "Men's Kurtas", collection: collections[0] },
-      { name: "Kids Ethnic", collection: collections[1] },
-      { name: "Fine Fabrics", collection: collections[2] },
-      { name: "Festive Sarees", collection: collections[3] },
+      { name: "Men's Kurtas", slug: "mens-kurtas", collection: collections[0] },
+      { name: "Kids Ethnic", slug: "kids-ethnic-wear", collection: collections[1] },
+      { name: "Fine Fabrics", slug: "fine-fabrics", collection: collections[2] },
+      { name: "Festive Sarees", slug: "festive-sarees", collection: collections[3] },
     ],
   );
 });

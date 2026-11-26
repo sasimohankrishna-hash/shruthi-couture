@@ -1,9 +1,10 @@
+const { randomUUID } = require("node:crypto");
 const { ApiError } = require("../middleware/errorHandler");
 
 const COLLECTION_FIELDS =
   "id,name,slug,description,cover_image_url,is_active,sort_order";
 const PRODUCT_FIELDS =
-  "id,collection_id,name,slug,description,is_active,is_featured,sort_order";
+  "id,collection_id,name,slug,description,price,stock,is_active,is_featured,sort_order";
 const IMAGE_FIELDS =
   "id,product_id,image_url,alt_text,sort_order";
 const VARIANT_FIELDS =
@@ -17,6 +18,43 @@ function trimmedOrNull(value) {
 
 function databaseError(message) {
   return new ApiError(502, message);
+}
+
+function slugBase(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 100) || "product";
+}
+
+async function createUniqueProductSlug(supabase, name) {
+  const base = slugBase(name);
+  for (let suffix = 1; suffix <= 100; suffix += 1) {
+    const slug = suffix === 1 ? base : `${base}-${suffix}`;
+    const { data, error } = await supabase
+      .from("products")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) throw databaseError("Could not generate a unique product slug");
+    if (!data) return slug;
+  }
+  throw new ApiError(409, "Could not generate a unique product slug");
+}
+
+async function createUniqueSku(supabase) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const sku = `SC-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+    const { data, error } = await supabase
+      .from("product_variants")
+      .select("id")
+      .eq("sku", sku)
+      .maybeSingle();
+    if (error) throw databaseError("Could not generate a SKU");
+    if (!data) return sku;
+  }
+  throw new ApiError(500, "Could not generate a unique SKU");
 }
 
 function createAdminCatalogueController(supabase) {
@@ -154,13 +192,17 @@ function createAdminCatalogueController(supabase) {
 
   async function createProduct(req, res, next) {
     try {
+      const slug = req.body.slug?.trim() ||
+        await createUniqueProductSlug(supabase, req.body.name.trim());
       const { data, error } = await supabase
         .from("products")
         .insert({
           collection_id: req.body.collectionId,
           name: req.body.name.trim(),
-          slug: req.body.slug.trim(),
-          description: req.body.description?.trim() || null,
+          slug,
+          description: req.body.description.trim(),
+          price: req.body.price ?? null,
+          stock: req.body.stock ?? null,
           is_active: req.body.isActive ?? true,
           is_featured: req.body.isFeatured ?? false,
           sort_order: req.body.sortOrder ?? 0,
@@ -190,6 +232,8 @@ function createAdminCatalogueController(supabase) {
       if (req.body.description !== undefined) {
         fields.description = trimmedOrNull(req.body.description);
       }
+      if (Object.hasOwn(req.body, "price")) fields.price = req.body.price;
+      if (Object.hasOwn(req.body, "stock")) fields.stock = req.body.stock;
       if (req.body.isActive !== undefined) fields.is_active = req.body.isActive;
       if (req.body.isFeatured !== undefined) {
         fields.is_featured = req.body.isFeatured;
@@ -291,15 +335,17 @@ function createAdminCatalogueController(supabase) {
 
   async function createVariant(req, res, next) {
     try {
+      const sku = trimmedOrNull(req.body.sku) ||
+        await createUniqueSku(supabase);
       const { data, error } = await supabase
         .from("product_variants")
         .insert({
           product_id: req.params.productId,
-          sku: req.body.sku.trim(),
+          sku,
           size: req.body.size?.trim() || null,
           color: req.body.color?.trim() || null,
-          price: req.body.price,
-          stock: req.body.stock,
+          price: req.body.price ?? null,
+          stock: req.body.stock ?? 0,
           is_active: req.body.isActive ?? true,
         })
         .select(VARIANT_FIELDS)
@@ -319,15 +365,15 @@ function createAdminCatalogueController(supabase) {
   async function updateVariant(req, res, next) {
     try {
       const fields = {};
-      if (req.body.sku !== undefined) fields.sku = req.body.sku.trim();
+      if (req.body.sku !== undefined) fields.sku = trimmedOrNull(req.body.sku);
       if (req.body.size !== undefined) {
         fields.size = trimmedOrNull(req.body.size);
       }
       if (req.body.color !== undefined) {
         fields.color = trimmedOrNull(req.body.color);
       }
-      if (req.body.price !== undefined) fields.price = req.body.price;
-      if (req.body.stock !== undefined) fields.stock = req.body.stock;
+      if (Object.hasOwn(req.body, "price")) fields.price = req.body.price;
+      if (Object.hasOwn(req.body, "stock")) fields.stock = req.body.stock;
       if (req.body.isActive !== undefined) fields.is_active = req.body.isActive;
 
       const { data, error } = await supabase

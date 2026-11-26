@@ -4,6 +4,8 @@ const productsGrid = document.querySelector("#products-grid");
 const productsAnnouncement = document.querySelector("#products-announcement");
 const bagCount = document.querySelector("#collection-bag-count");
 let productData = [];
+const productPlaceholder =
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 720"><rect width="640" height="720" fill="#e8dfd1"/><path d="M170 500h300l-25-205H195z" fill="#f8f5ee" stroke="#8c7355" stroke-width="8"/><path d="M250 295c0-95 140-95 140 0" fill="none" stroke="#8c7355" stroke-width="10"/><path d="M270 390h100" stroke="#d8bc7c" stroke-width="8"/></svg>')}`;
 
 if (window.lucide) window.lucide.createIcons();
 
@@ -24,32 +26,33 @@ function updateBagCount() {
 function makeVariantLabel(variant) {
   const options = [variant.size, variant.color].filter(Boolean).join(" · ");
   const identifier = options || variant.sku || "Standard option";
-  const stockLabel = variant.stock > 0
+  const stockLabel = Number.isInteger(variant.stock) && variant.stock > 0
     ? `${variant.stock} available`
-    : "Out of stock";
-  return `${identifier} · ${store.formatPrice(Number(variant.price))} · ${stockLabel}`;
+    : variant.stock === null
+      ? "Stock not set"
+      : "Out of stock";
+  return `${identifier} · ${store.formatPrice(variant.price)} · ${stockLabel}`;
 }
 
 function createProductCard(product, collection) {
   const card = document.createElement("article");
   card.className = "style-card";
+  card.dataset.productId = product.id;
 
-  const imageUrl =
-    product.images?.find((image) => image.image_url)?.image_url ||
-    collection.cover_image_url;
-  if (imageUrl) {
-    const image = document.createElement("img");
-    image.className = "style-image";
-    image.src = imageUrl;
-    image.alt = product.images?.[0]?.alt_text || product.name;
-    image.loading = "lazy";
-    image.decoding = "async";
-    image.addEventListener("error", () => {
-      image.classList.add("image-unavailable");
-      image.alt = `${product.name} image could not be loaded`;
-    });
-    card.append(image);
-  }
+  const image = document.createElement("img");
+  image.className = "style-image";
+  image.src =
+    product.images?.find((entry) => entry.image_url)?.image_url ||
+    collection.cover_image_url ||
+    productPlaceholder;
+  image.alt = product.images?.[0]?.alt_text || product.name;
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.addEventListener("error", () => {
+    image.src = productPlaceholder;
+    image.alt = `${product.name} image placeholder`;
+  }, { once: true });
+  card.append(image);
 
   const copy = document.createElement("div");
   copy.className = "style-card-copy";
@@ -60,42 +63,88 @@ function createProductCard(product, collection) {
   title.textContent = product.name;
   const description = document.createElement("p");
   description.textContent = product.description || "";
-  const variantLabel = document.createElement("label");
-  variantLabel.className = "variant-option-label";
-  variantLabel.textContent = "Size, colour and price";
-  const variantSelect = document.createElement("select");
-  variantSelect.className = "variant-option";
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const availableVariants = variants.filter(
-    (variant) => Number.isInteger(variant.stock) && variant.stock > 0,
+    (variant) =>
+      Number.isInteger(variant.stock) &&
+      variant.stock > 0 &&
+      Number.isFinite(Number(variant.price)) &&
+      Number(variant.price) > 0,
   );
 
-  variants.forEach((variant) => {
-    const option = document.createElement("option");
-    option.value = variant.id;
-    option.textContent = makeVariantLabel(variant);
-    option.disabled = !availableVariants.some((entry) => entry.id === variant.id);
-    variantSelect.append(option);
-  });
-  if (availableVariants.length > 0) {
-    variantSelect.value = availableVariants[0].id;
+  let variantSelect = null;
+  let variantLabel = null;
+  let optionNote = null;
+  if (variants.length > 0) {
+    variantLabel = document.createElement("label");
+    variantLabel.className = "variant-option-label";
+    variantLabel.textContent = "Size, colour and price";
+    variantSelect = document.createElement("select");
+    variantSelect.className = "variant-option";
+
+    variants.forEach((variant) => {
+      const option = document.createElement("option");
+      option.value = variant.id;
+      option.textContent = makeVariantLabel(variant);
+      option.disabled = !availableVariants.some((entry) => entry.id === variant.id);
+      variantSelect.append(option);
+    });
+    if (availableVariants.length > 0) {
+      variantSelect.value = availableVariants[0].id;
+    }
+    variantLabel.append(variantSelect);
+  } else {
+    optionNote = document.createElement("p");
+    optionNote.className = "variant-option-label";
+    optionNote.textContent = "No size or colour options configured";
   }
-  variantLabel.append(variantSelect);
 
   const price = document.createElement("p");
   price.className = "style-price";
+  const availability = document.createElement("p");
+  availability.className = "product-stock-note";
   const selectedVariant = () =>
-    variants.find((variant) => variant.id === variantSelect.value);
+    variantSelect
+      ? variants.find((variant) => variant.id === variantSelect.value)
+      : null;
   const updateVariantPrice = () => {
     const variant = selectedVariant();
-    price.textContent = variant
-      ? store.formatPrice(Number(variant.price))
-      : "Currently unavailable";
-    quantityInput.max = String(variant?.stock || 1);
-    if (variant && Number(quantityInput.value) > variant.stock) {
+    if (variants.length === 0) {
+      const productPriceIsValid =
+        Number.isFinite(Number(product.price)) && Number(product.price) > 0;
+      const productStockIsValid =
+        Number.isInteger(product.stock) && product.stock > 0;
+      price.textContent = productPriceIsValid
+        ? store.formatPrice(product.price)
+        : "Price on request";
+      availability.textContent = product.stock == null
+        ? "Stock is being updated"
+        : product.stock < 1
+          ? "Out of stock"
+          : "";
+      quantityInput.max = String(productStockIsValid ? product.stock : 1);
+      addButton.disabled = !productPriceIsValid || !productStockIsValid;
+      return;
+    }
+
+    price.textContent =
+      variant && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0
+        ? store.formatPrice(variant.price)
+        : variant?.price == null
+          ? "Price on request"
+          : "Currently unavailable";
+    availability.textContent = "";
+    quantityInput.max = String(variant?.stock > 0 ? variant.stock : 1);
+    if (
+      Number.isInteger(variant?.stock) &&
+      variant.stock > 0 &&
+      Number(quantityInput.value) > variant.stock
+    ) {
       quantityInput.value = String(variant.stock);
     }
-    addButton.disabled = !variant || variant.stock < 1;
+    addButton.disabled =
+      !variant ||
+      !availableVariants.some((entry) => entry.id === variant.id);
   };
   const quantityLabel = document.createElement("label");
   quantityLabel.className = "variant-option-label";
@@ -112,14 +161,19 @@ function createProductCard(product, collection) {
   const addButton = document.createElement("button");
   addButton.className = "add-to-cart";
   addButton.type = "button";
-  addButton.dataset.addVariant = "";
+  addButton.dataset.addProduct = "";
   addButton.textContent = "Add to Bag";
   addButton.disabled = availableVariants.length === 0;
-  variantSelect.addEventListener("change", updateVariantPrice);
+  if (variantSelect) {
+    variantSelect.addEventListener("change", updateVariantPrice);
+  }
   updateVariantPrice();
 
   actions.append(addButton);
-  copy.append(label, title, description, variantLabel, price, quantityLabel, actions);
+  copy.append(label, title, description);
+  if (optionNote) copy.append(optionNote);
+  if (variantLabel) copy.append(variantLabel);
+  copy.append(price, availability, quantityLabel, actions);
   card.append(copy);
   return card;
 }
@@ -263,53 +317,59 @@ function showCollectionUnavailable(message) {
 }
 
 productsGrid.addEventListener("click", (event) => {
-  const addButton = event.target.closest("[data-add-variant]");
+  const addButton = event.target.closest("[data-add-product]");
   if (!addButton) return;
 
   const card = addButton.closest(".style-card");
   const variant = card.querySelector(".variant-option");
   const quantityInput = card.querySelector('input[type="number"]');
-  const product = productData.find((item) =>
-    item.variants.some((entry) => entry.id === variant.value),
-  );
+  const product = productData.find((item) => item.id === card.dataset.productId);
   const selectedVariant = product?.variants.find(
-    (entry) => entry.id === variant.value,
+    (entry) => entry.id === variant?.value,
   );
+  const hasVariants = Array.isArray(product?.variants) && product.variants.length > 0;
+  const itemPrice = hasVariants ? Number(selectedVariant?.price) : Number(product?.price);
+  const itemStock = hasVariants ? selectedVariant?.stock : product?.stock;
   const quantity = Number(quantityInput.value);
   if (
     !product ||
-    !selectedVariant ||
+    (hasVariants && !selectedVariant) ||
+    !Number.isFinite(itemPrice) ||
+    itemPrice <= 0 ||
+    !Number.isInteger(itemStock) ||
+    itemStock < 1 ||
     !Number.isInteger(quantity) ||
     quantity < 1 ||
-    quantity > selectedVariant.stock
+    quantity > itemStock
   ) {
     showProductsMessage("Choose an available option and valid quantity.", true);
     return;
   }
 
   const cart = new Map(
-    store.getCart()
-      .map((item) => [item.variantId, item]),
+    store.getCart().map((item) => [store.getCartItemKey(item), item]),
   );
-  const existing = cart.get(selectedVariant.id);
+  const cartItem = {
+    variantId: selectedVariant?.id || null,
+    productId: product.id,
+    title: product.name,
+    size: selectedVariant?.size || null,
+    color: selectedVariant?.color || null,
+    price: itemPrice,
+    stock: itemStock,
+    quantity: 0,
+  };
+  const cartItemKey = store.getCartItemKey(cartItem);
+  const existing = cart.get(cartItemKey);
   const nextQuantity = (existing?.quantity || 0) + quantity;
-  if (nextQuantity > selectedVariant.stock) {
+  if (nextQuantity > itemStock) {
     showProductsMessage(
-      `Only ${selectedVariant.stock} of this option are currently available.`,
+      `Only ${itemStock} of this option are currently available.`,
       true,
     );
     return;
   }
-  cart.set(selectedVariant.id, {
-    variantId: selectedVariant.id,
-    productId: product.id,
-    title: product.name,
-    size: selectedVariant.size,
-    color: selectedVariant.color,
-    price: Number(selectedVariant.price),
-    stock: selectedVariant.stock,
-    quantity: nextQuantity,
-  });
+  cart.set(cartItemKey, { ...cartItem, quantity: nextQuantity });
   try {
     store.saveCart([...cart.values()]);
     updateBagCount();

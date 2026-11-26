@@ -22,7 +22,9 @@ const checkoutResult = document.querySelector("#checkout-result");
 const orderButton = document.querySelector("#cart-whatsapp");
 const enquiryForm = document.querySelector("#customer-enquiry-form");
 const enquiryFeedback = document.querySelector("#enquiry-feedback");
-const cart = new Map(store.getCart().map((item) => [item.variantId, item]));
+const cart = new Map(
+  store.getCart().map((item) => [store.getCartItemKey(item), item]),
+);
 let checkoutSubmitting = false;
 
 if (window.lucide) window.lucide.createIcons();
@@ -58,9 +60,8 @@ function createCollectionNavigation(collections) {
   const entries =
     window.CoutureCollectionNavigation.getNavigationEntries(collections);
   entries.forEach((entry) => {
-    const collectionUrl = entry.collection
-      ? `collection.html?collection=${encodeURIComponent(entry.collection.slug)}`
-      : "#fabrics";
+    const collectionUrl =
+      `collection.html?collection=${encodeURIComponent(entry.slug)}`;
     const desktopLink = document.createElement("a");
     desktopLink.className = "nav-link";
     desktopLink.href = collectionUrl;
@@ -189,7 +190,7 @@ function renderCart() {
     removeButton.className = "cart-remove";
     removeButton.type = "button";
     removeButton.textContent = "Remove one";
-    removeButton.dataset.cartRemove = item.variantId;
+    removeButton.dataset.cartRemove = store.getCartItemKey(item);
     removeButton.setAttribute(
       "aria-label",
       `Remove one ${item.title} from your bag`,
@@ -237,12 +238,12 @@ searchForm.addEventListener("submit", (event) => {
 cartItemsElement.addEventListener("click", (event) => {
   const removeButton = event.target.closest("[data-cart-remove]");
   if (!removeButton) return;
-  const variantId = removeButton.dataset.cartRemove;
-  const item = cart.get(variantId);
+  const cartItemKey = removeButton.dataset.cartRemove;
+  const item = cart.get(cartItemKey);
   if (!item) return;
 
-  if (item.quantity === 1) cart.delete(variantId);
-  else cart.set(variantId, { ...item, quantity: item.quantity - 1 });
+  if (item.quantity === 1) cart.delete(cartItemKey);
+  else cart.set(cartItemKey, { ...item, quantity: item.quantity - 1 });
   saveCart();
   renderCart();
   announce(`${item.title} quantity updated.`);
@@ -264,7 +265,7 @@ function showWhatsAppSuccess(order) {
     }),
     `Order total: ${store.formatPrice(order.total_amount)}.`,
   ].join("\n");
-  const url = `https://wa.me/919346794749?text=${encodeURIComponent(message)}`;
+  const url = `https://wa.me/918019771219?text=${encodeURIComponent(message)}`;
   const link = document.createElement("a");
   link.href = url;
   link.target = "_blank";
@@ -317,7 +318,9 @@ checkoutForm.addEventListener("submit", async (event) => {
       customerName,
       customerPhone,
       items: items.map((item) => ({
-        variantId: item.variantId,
+        ...(item.variantId
+          ? { variantId: item.variantId }
+          : { productId: item.productId }),
         quantity: item.quantity,
       })),
     });
@@ -409,7 +412,9 @@ window.addEventListener("hashchange", openCartFromUrl);
 window.addEventListener("storage", (event) => {
   if (!event.key || event.key === "shruthis-couture.cart.v1") {
     cart.clear();
-    store.getCart().forEach((item) => cart.set(item.variantId, item));
+    store.getCart().forEach((item) => {
+      cart.set(store.getCartItemKey(item), item);
+    });
     renderCart();
   }
 });
